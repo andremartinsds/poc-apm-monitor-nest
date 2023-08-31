@@ -1,0 +1,55 @@
+version: "3.7"
+
+services:
+  app:
+    container_name: app
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - elasticsearch
+    environment:
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+    networks:
+      - apm-monitor-nest
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - apm-monitor-nest
+
+  kibana:
+    image: kibana:7.14.2
+    container_name: kibana
+    links:
+      - elasticsearch
+    ports:
+      - "5601:5601"
+    networks:
+      - apm-monitor-nest
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:7.15.0
+    container_name: apm-server
+    ports:
+      - "8200:8200"
+    environment:
+      - output.elasticsearch.hosts=["elasticsearch:9200"]
+    networks:
+      - apm-monitor-nest
+
+networks:
+  apm-monitor-nest:
+    driver: bridge
+    name: apm-monitor-nest
+
+volumes:
+  es_data: {}
